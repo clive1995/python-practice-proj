@@ -1,27 +1,29 @@
 from .. import mdb
-from .user_model import User
+import datetime
 
-class Experience(mdb.embeddedDocument):
+class Experience(mdb.EmbeddedDocument):
+    publicId = mdb.UUIDField()
     title =  mdb.StringField()
     company =  mdb.StringField()
     location =  mdb.StringField()
-    fromdate =  mdb.DateField()
-    todate = mdb.DateField()
+    fromDate =  mdb.DateField()
+    toDate = mdb.DateField()
     current =mdb.BooleanField()
-    description = mdb.DateField()
+    description = mdb.StringField()
 
 
-class Education(mdb.Document):
+class Education(mdb.EmbeddedDocument):
+    publicId = mdb.UUIDField()
     school = mdb.StringField()
     degree = mdb.StringField()
     fieldofstudy = mdb.StringField()
-    fromdate = mdb.DateField()
-    todate = mdb.DateField()
+    fromDate = mdb.DateField()
+    toDate = mdb.DateField()
     current = mdb.BooleanField()
     description = mdb.StringField()
 
 
-class Social(mdb.Document):
+class Social(mdb.EmbeddedDocument):
     youtube = mdb.StringField()
     twitter = mdb.StringField()
     facebook = mdb.StringField()
@@ -29,18 +31,16 @@ class Social(mdb.Document):
     instagram = mdb.StringField()
 
 
-class Profile(mdb.Document):
-    publicId = mdb.UUIDField(binary=True)
-    userId = mdb.ReferenceField(User)
-    company = mdb.StringField()
-    website = mdb.StringField()
-    location = mdb.StringField()
-    status = mdb.StringField()
+class Profile(mdb.EmbeddedDocument):
+    company = mdb.StringField(required=True, default='')
+    website = mdb.StringField(required=True, default='')
+    location = mdb.StringField(required=True, default='')
+    status = mdb.BooleanField(required=True, default=True)
     skills = mdb.ListField()
-    bio = mdb.StringField()
-    githubusername = mdb.StringField()
+    bio = mdb.StringField(required=True, default='')
+    githubusername = mdb.StringField(required=True, default='')
     experience = mdb.ListField(mdb.EmbeddedDocumentField(Experience))
     education = mdb.ListField(mdb.EmbeddedDocumentField(Education))
-    social = mdb.embeddedDocument(Social)
-    createdOn = mdb.DateField()
+    social = mdb.EmbeddedDocumentField(Social)
+    createdOn = mdb.DateField(default=datetime.datetime.now())
 
