@@ -1,0 +1,10 @@
+Flask==1.1.1
+Flask-Bcrypt==0.7.1
+Flask-PyMongo==2.3.0
+flask-restplus==0.13.0
+Flask-WTF==0.14.2
+Flask-Cors==3.0.8
+Flask-Script==2.0.6
+Flask-JWT-Extended==3.24.1
+Werkzeug==0.16.0
+

@@ -14,8 +14,11 @@ uploadParser.add_argument('file1', location="files", type=FileStorage, required=
 
 @api.route("/profile")
 class UploadImage(Resource):
-    @api.doc(security='apikey')
-    @roles_required("ADMIN","DEVELOPER")
+    target = os.path.join(Const.APP_ROOT, 'files')  # folder path
+    if not os.path.isdir(target):
+        os.mkdir(target)
+    # @api.doc(security='apikey')
+    # @roles_required("ADMIN","DEVELOPER")
     @api.expect(uploadParser, validate=True)
     def put(self):
         """ upload profile Image"""
@@ -24,8 +27,12 @@ class UploadImage(Resource):
 
 @api.route('/post')
 class UploadPostImage(Resource):
-    @api.doc(security="apikey")
-    @roles_required("ADMIN", "DEVELOPER")
+    target = os.path.join(Const.APP_ROOT, 'files')  # folder path
+    print(target)
+    if not os.path.isdir(target):
+        os.mkdir(target)
+    # @api.doc(security="apikey")
+    # @roles_required("ADMIN", "DEVELOPER")
     @api.expect(uploadParser)
     def put(self):
         data = uploadParser.parse_args()
