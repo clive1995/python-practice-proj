@@ -24,12 +24,11 @@ class UserOperations(Resource):
     @api.doc(security='apikey')
     @roles_required('ADMIN',"DEVELOPER")
     # @api.expect(Userconst.getuserParams)
-    @api.marshal_list_with(UserDTO.UserGet)
+    @api.marshal_list_with(UserDTO.UserGetResponse)
     def get(self, **token):
         data = {}
         data['publicId'] = token['publicId']
         data['role'] = token['role']
-        print(data)
         return getUserProfile(data=data)
 
 @api.route('/education')
@@ -45,7 +44,7 @@ class Education(Resource):
     @api.doc(security='apikey')
     @roles_required('ADMIN',"DEVELOPER")
     # @api.expect(Userconst.getuserParams)
-    @api.marshal_list_with(UserDTO.getEducation)
+    @api.marshal_list_with(UserDTO.geteducationresponse)
     def get(self,**token):
         data = {}
         data['publicId'] = token['publicId']
@@ -81,7 +80,7 @@ class UserExperience(Resource):
     @api.doc(security='apikey')
     @roles_required('ADMIN', "DEVELOPER")
     # @api.expect(Userconst.getuserParams)
-    @api.marshal_list_with(UserDTO.UserExperienceGet)
+    @api.marshal_list_with(UserDTO.UserExperienceGetResponse)
     def get(self,**token):
         # data = Userconst.getuserParams.parse_args()
         data = {}

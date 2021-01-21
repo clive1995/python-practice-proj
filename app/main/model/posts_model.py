@@ -9,6 +9,7 @@ class Likes(mdb.EmbeddedDocument):
 
 class Comments(mdb.EmbeddedDocument):
     userId = mdb.ReferenceField(User)
+    publicId = mdb.UUIDField()
     text = mdb.StringField()
     # name = mdb.StringField()
     createdOn = mdb.DateField(default=datetime.datetime.now())

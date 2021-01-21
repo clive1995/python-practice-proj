@@ -9,7 +9,7 @@ class User(mdb.Document):
     email = mdb.EmailField()
     password = mdb.StringField()
     passwordsalt = mdb.StringField()
-    profileImage = mdb.StringField()
+    profileImage = mdb.StringField(default="")
     createdOn = mdb.DateField()
     role = mdb.StringField(choice=ROLES)
     profile = mdb.EmbeddedDocumentField(Profile, required=True, default=Profile())

@@ -66,6 +66,11 @@ class UserDTO:
         'skills': fields.String(),
         'social': fields.Nested(social),
     })
+    UserGetResponse= api.model('UserGetResponse',{
+        "status":fields.String(),
+        "message":fields.String(),
+        "data":fields.Nested(UserGet)
+    })
 
     UserExperienceGet = api.model('UserExperienceGet',{
         'publicId':fields.String(),
@@ -76,6 +81,12 @@ class UserDTO:
         'toDate': fields.DateTime(),
         'current': fields.Boolean(),
         'description': fields.String(),
+    })
+
+    UserExperienceGetResponse = api.model('UserExperienceGetResponse',{
+        'status': fields.String(),
+        'message': fields.String(),
+        'data': fields.List(fields.Nested(UserExperienceGet))
     })
 
     putExperience = api.model('putExperience',{
@@ -106,8 +117,13 @@ class UserDTO:
         'description': fields.String()
     })
 
+    geteducationresponse = api.model('geteducationresponse',{
+        'status':fields.String(),
+        'message':fields.String(),
+        'data':fields.List(fields.Nested(getEducation))
+    })
     deleteExperience = api.model('deleteExperience',{
-        # 'userPublicId':fields.String(),
+        'userPublicId':fields.String(),
         'experiencePublicId':fields.String()
     })
 

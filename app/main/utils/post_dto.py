@@ -1,11 +1,9 @@
 from flask_restplus import Namespace,fields
 from ..service.constants import *
-from ..service.constants import *
 class PostsDTO:
     api = Namespace('Posts',authorizations=Const.authorizations,description="Post related API's")
 
     addPost = api.model('addPost',{
-        "userId":fields.String(),
         "text":fields.String(),
         "name":fields.String(),
     })
@@ -24,27 +22,64 @@ class PostsDTO:
         "email": fields.String(),
         "publicId": fields.String()
     })
-
+    getindividualComment = api.model('getindividualComment',{
+        'publicId':fields.String(),
+        'text':fields.String(),
+        'userInfo':fields.List(fields.Nested(userInfo))
+    })
     getPost = api.model('getPost',{
         "publicId":fields.String(),
         "text":fields.String(),
         "name":fields.String(),
-        "userInfo": fields.Nested(userInfo),
-        "likes": fields.Integer()
+        "comments":fields.List(fields.Nested(getindividualComment)),
+        "likes": fields.List(fields.Nested(userInfo)),
+    })
+
+    getPostResponse = api.model('getPostResponse',{
+        'status': fields.String(),
+        'message': fields.String(),
+        'data':fields.Nested(getPost)
     })
 
     getLikes = api.model('getLikes',{
-        'publicId':fields.String(),
-        'commentId':fields.String()
+        # 'publicId':fields.String(),
+        'postId':fields.String()
+    })
+
+    getOnePost = api.model('getOnePost',{
+        'postId':fields.String()
     })
 
     postComments = api.model('postComments',{
-        'commentId':fields.String(),
-        'userId':fields.String(),
+        'postId':fields.String(),
+        # 'userId':fields.String(),
         'text':fields.String(),
     })
 
     deleteComments = api.model('deleteComments',{
         'commentId':fields.String(),
-        'userId':fields.String()
+        'postId':fields.String()
+    })
+
+    comments = api.model('comments',{
+        "publicId":fields.String(),
+        "text":fields.String(),
+    })
+
+    userInfo = api.model('userInfo',{
+        "name": fields.String(),
+        "email":  fields.String(),
+        "role":  fields.String(),
+    })
+
+    commentOutput = api.model('commentOutput',{
+        "comments":fields.Nested(comments),
+        'userInfo':fields.Nested(userInfo)
+    })
+    commentPaginate = api.model('commentPaginate',{
+        "publicId": fields.String(),
+        "text": fields.String(),
+        "name": fields.String(),
+        "postImage": fields.String(),
+        "comments":fields.List(fields.Nested(commentOutput))
     })

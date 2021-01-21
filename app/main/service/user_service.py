@@ -16,20 +16,20 @@ def createUser(data):
         if check_user:
             response_data = {
                 "status":Const.FAIL,
-                "message":"User already exists, please login to continue"
+                "message":Const.USER_EXISTS_LOGIN_TO_CONTINUE
             }
             return response_data,Const.ERROR_CODE
 
         if data['confirmpassword'] != data['password']:
             return {
                 'status':Const.FAIL,
-                'message':'mis-matched password'
+                'message':Const.MISMATCHED_PASSWORD
             }, Const.ERROR_CODE
 
         if data['role'].upper() == 'ADMIN':
             return {
                 'status':Const.FAIL,
-                'message':'Only Admin can assign admin role'
+                'message':Const.ADMIN_CAN_ASSIGN_ROLE
             }, Const.ERROR_CODE
 
         salt = gen_salt()
@@ -41,13 +41,13 @@ def createUser(data):
 
         response_data = {
             'status': Const.SUCCESS,
-            'message':"User added Successfully"
+            'message':Const.USER_ADDED_SUCCESSFULLY
         }
         return response_data, Const.SUCCESS_CODE
     except Exception as e:
         response_data = {
             'status':Const.FAIL,
-            'message':e
+            'message':e.errors
         }
         return response_data, Const.ERROR_CODE
 
@@ -60,7 +60,6 @@ def editUser(data):
                 'message': Const.MISSING_USER_INPUT
             }
             return response_data, Const.ERROR_CODE
-        print(data)
         check_user = User.objects.aggregate(*[
             {'$match':{'publicId':uuid.UUID(data['publicId'])}
         }])
@@ -74,15 +73,19 @@ def editUser(data):
 
         publicId = data['publicId']
         del data['publicId']
-        print(data)
+
+        if data['status'].upper() == "ACTIVE":
+            data['status'] = True
+        else:
+            data['status'] = False
+
         profile ={'profile':data}
 
-
-        User.objects(publicId=publicId).update(**profile)
+        User.objects(publicId=publicId).update(set__profile=profile['profile'])
 
         response_data = {
             'status': Const.SUCCESS,
-            'message':"User Updated Successfully"
+            'message':Const.USER_UPDATED_SUCCESSFULLY
         }
         return response_data, Const.SUCCESS_CODE
 
@@ -129,7 +132,6 @@ def getUserProfile(data):
             }
             ,projected])
         fetchUser = list(fetchUser)
-        print(fetchUser[0]['profile'])
         if not fetchUser:
             response_data = {
                 'status': Const.FAIL,
@@ -137,16 +139,16 @@ def getUserProfile(data):
             }
             return response_data, Const.ERROR_CODE
 
-        # response_data = {
-        #     'status': Const.SUCCESS_CODE,
-        #     'data': fetchUser[0]
-        # }
-        return fetchUser[0]['profile']
+        return {
+            "status":Const.SUCCESS,
+            'message':"",
+            'data':fetchUser[0]['profile']
+        }, Const.SUCCESS_CODE
 
     except Exception as e:
         response_data = {
             'status':Const.FAIL,
-            'message':e
+            'message':[]
         }
         return response_data, Const.ERROR_CODE
 
@@ -177,10 +179,11 @@ def putExperience(data):
 
         index = fetch_user[0]['profile']['experience'].index(list(filo)[0])
         fetch_user[0]['profile']['experience'][index] = data['experience']
-        User.objects(publicId=data['publicId']).update(**fetch_user[0])
+        # User.objects(publicId=data['publicId']).update(**fetch_user[0])
+        User.objects(publicId=data['publicId']).update(set__profile__experience=fetch_user[0]['profile']['experience'])
         response_data = {
             'status': Const.SUCCESS,
-            'message': 'Experience added'
+            'message': Const.EXPERIENCE_UPDATED
         }
         return response_data, Const.SUCCESS_CODE
     except Exception as e:
@@ -209,12 +212,10 @@ def postExperience(data):
             return response_data, Const.ERROR_CODE
         fetch_user = list(fetch_user)
         data['experience']['publicId'] = uuid.uuid4()
-        fetch_user[0]['profile']['experience'].append(data['experience'])
-        del fetch_user[0]['_id']
-        User.objects(publicId=data['publicId']).update(**fetch_user[0])
+        User.objects(publicId=data['publicId']).update(add_to_set__profile__experience=data['experience'])
         response_data = {
             'status': Const.SUCCESS,
-            'message': 'Experience added'
+            'message': Const.EXPERIENCE_ADDED
         }
         return response_data, Const.SUCCESS_CODE
     except Exception as e:
@@ -262,8 +263,12 @@ def getUserExperience(data):
             return response_data, Const.ERROR_CODE
 
         fetch_user = list(fetch_user)
-        print(fetch_user[0]['profile']['experience'])
-        return fetch_user[0]['profile']['experience']
+
+
+        return {'status':Const.SUCCESS,
+                'message':'',
+                'data':fetch_user[0]['profile']['experience']
+                }, Const.SUCCESS_CODE
     except Exception as e:
         response_data = {
             'status':Const.FAIL,
@@ -281,7 +286,27 @@ def deleteExperience(data):
             }
             return response_data, Const.ERROR_CODE
 
-        fetch_user = User.objects.aggregate(*[{'$match':{'publicId':uuid.UUID(data['userPublicId'])}}])
+        fetch_user = User.objects.aggregate(*[
+            {
+                '$match':{
+                    'publicId':uuid.UUID(data['userPublicId'])
+                }
+            },
+            {
+                '$project':{
+                    'profile':{
+                        'experience': {
+                            '$filter': {
+                                'input': '$profile.experience',
+                                'as': 'expor',
+                                'cond': {'$eq': ['$$expor.publicId', uuid.UUID(data['experiencePublicId'])] }
+                            }
+                        }
+                    }
+                }
+            }
+        ])
+        fetch_user = list(fetch_user)
         if not fetch_user:
             response_object = {
                 'status':Const.FAIL,
@@ -289,15 +314,11 @@ def deleteExperience(data):
             }
             return response_object, Const.ERROR_CODE
 
-        fetch_user = list(fetch_user)
-        fetch_modify = filter(lambda exp:exp['publicId'] != uuid.UUID(data['experiencePublicId']), fetch_user[0]['profile']['experience'])
-        fetch_user[0]['profile']['experience'] = fetch_modify
-        del fetch_user[0]['_id']
-        User.objects(publicId=data['userPublicId']).update(**fetch_user[0])
+        User.objects(publicId=data['userPublicId']).update(pull__profile__experience__publicId=uuid.UUID(data['experiencePublicId']))
 
         response_data = {
             'status': Const.SUCCESS,
-            'message': 'Experience Deleted'
+            'message':Const.EXPERIENCE_DALETED
         }
         return response_data, Const.SUCCESS_CODE
     except Exception as e:
@@ -320,17 +341,17 @@ def putEducation(data):
         fetch_user = User.objects.aggregate(*[{'$match':{'publicId':uuid.UUID(data['publicId'])}}])
         fetch_user = list(fetch_user)
 
-        for i in range(0,len(fetch_user[0]['profile']['education'])):
-            if fetch_user[0]['profile']['education'][i]['publicId'] == uuid.UUID(data['education']['publicId']):
-                index = fetch_user[0]['profile']['education'].index(fetch_user[0]['profile']['education'][i])
-                fetch_user[0]['profile']['education'][index] = data['education']
+        fetch_education = filter(lambda x:x['publicId']==uuid.UUID(data['education']['publicId']), fetch_user[0]['profile']['education'])
+        fetch_education = list(fetch_education)
 
-        del fetch_user[0]['_id']
-        User.objects(publicId=data['publicId']).update(**fetch_user[0])
+        index = fetch_user[0]['profile']['education'].index(fetch_education[0])
+        fetch_user[0]['profile']['education'][index] = data['education']
+
+        User.objects(publicId=data['publicId']).update(set__profile__education=fetch_user[0]['profile']['education'])
 
         response_data = {
             'status': Const.SUCCESS,
-            'message': 'Education Updated Successfully'
+            'message':Const.EDUCATION_UPDATED
         }
         return response_data
 
@@ -367,7 +388,7 @@ def deleteEducation(data):
 
         return_object = {
             "status":Const.SUCCESS,
-            "message":"Education Deleted"
+            "message":Const.EDUCATION_DELETED
         }
 
         return return_object,Const.SUCCESS_CODE
@@ -388,23 +409,12 @@ def postEducation(data):
             }
             return response_data, Const.FAIL
 
-        fetch_user = User.objects.aggregate(*[
-            {'$match':{'publicId':uuid.UUID(data['publicId'])}}
-        ])
-
-        fetch_user = list(fetch_user)
-        # print(data)
         data['education']['publicId'] = uuid.uuid4()
-        print(data['education'])
-        fetch_user[0]['profile']['education'].append(data['education'])
-        print(fetch_user[0]['profile']['education'])
-        del fetch_user[0]['_id']
-        # print(fetch_user)
 
-        User.objects(publicId=data['publicId']).update(**fetch_user[0])
+        User.objects(publicId=data['publicId']).update(add_to_set__profile__education=data['education'])
         response_data = {
             'status': Const.SUCCESS,
-            'message': 'Education added Successfully'
+            'message': Const.EDUCATION_ADDED_SUCCESS
         }
         return response_data
     except Exception as e:
@@ -438,13 +448,12 @@ def getEducation(data):
                 }
             }
         }
-        print(data)
+
         fetch_user = User.objects.aggregate(*[
             {'$match':{'publicId':uuid.UUID(data['publicId'])}},
             projected
         ])
         fetch_user = list(fetch_user)
-        print(fetch_user)
 
         if not fetch_user:
             response_object = {
@@ -453,7 +462,10 @@ def getEducation(data):
             }
             return response_object, Const.FAIL
 
-        return fetch_user[0]['profile']['education']
+        return {'status':Const.SUCCESS,
+                'message':'',
+                'data':fetch_user[0]['profile']['education']
+                }, Const.SUCCESS_CODE
 
     except Exception as e:
         response_data = {
@@ -464,18 +476,13 @@ def getEducation(data):
 
 def login_user(data):
     try:
-        print(data)
-        # fetch_user = User.objects.aggregate(*[{'$match':{'email':data['username']}}])
-
         fetch_user = User.objects.aggregate(*[{'$match':{'email':data['username']}}])
-        print(data['password'].encode('utf-8'))
         fetch_user = list(fetch_user)
-        print(fetch_user)
         verify = check_password_hash(fetch_user[0]['password'].encode('utf-8') , fetch_user[0]['passwordsalt'],data['password'])
         if not verify:
             response_data = {
                 'status':Const.FAIL,
-                'message':'mismatch password'
+                'message':Const.MISMATCHED_PASSWORD
             }
             return response_data, Const.SUCCESS_CODE
         response_data = {
